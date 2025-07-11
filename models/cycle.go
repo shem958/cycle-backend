@@ -1,11 +1,17 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
 
+	"gorm.io/gorm"
+)
+
+// Cycle represents a user's menstrual cycle entry
 type Cycle struct {
 	gorm.Model
-	StartDate string `json:"startDate" binding:"required"`     // required
-	Length    int    `json:"length" binding:"required,min=1"`  // required, at least 1
-	Mood      string `json:"mood"`                             // optional
-	Symptoms  string `json:"symptoms"`                         // optional
+	UserID    uint      `json:"user_id"` // foreign key
+	StartDate time.Time `json:"start_date"`
+	Length    int       `json:"length"`   // duration in days
+	Mood      string    `json:"mood"`     // optional mood description
+	Symptoms  string    `json:"symptoms"` // comma-separated or JSON string
 }

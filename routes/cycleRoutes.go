@@ -6,16 +6,13 @@ import (
 	"github.com/shem958/cycle-backend/middleware"
 )
 
-func RegisterCycleRoutes(router *gin.Engine) {
-	api := router.Group("/api")
+// RegisterCycleRoutes sets up cycle endpoints
+func RegisterCycleRoutes(rg *gin.RouterGroup) {
+	cycle := rg.Group("/cycles")
+	cycle.Use(middleware.AuthMiddleware())
 
-	// Apply authentication to all /api/cycles routes
-	protected := api.Group("/cycles")
-	protected.Use(middleware.AuthMiddleware())
-	{
-		protected.GET("", controllers.GetCycles)
-		protected.POST("", controllers.AddCycle)
-		protected.PUT("/:id", controllers.UpdateCycle)
-		protected.DELETE("/:id", controllers.DeleteCycle)
-	}
+	cycle.GET("/", controllers.GetCycles)
+	cycle.POST("/", controllers.AddCycle)
+	cycle.PUT("/:id", controllers.UpdateCycle)
+	cycle.DELETE("/:id", controllers.DeleteCycle)
 }

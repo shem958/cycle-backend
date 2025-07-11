@@ -7,71 +7,73 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
-	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
-
+// Register handles new user registration
 func Register(c *gin.Context) {
-	var input struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
 		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Hashing failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Password hashing failed"})
+		return
+	}
+	user.Password = string(hashedPassword)
+
+	// Save user
+	if err := config.DB.Create(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User creation failed", "details": err.Error()})
 		return
 	}
 
-	user := models.User{Email: input.Email, PasswordHash: string(hash)}
-	result := config.DB.Create(&user)
-
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email already in use"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "User registered"})
+	c.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
 }
 
+// Login authenticates user and returns a JWT token
 func Login(c *gin.Context) {
-	var input struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+	var creds struct {
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required"`
 	}
-
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+	if err := c.ShouldBindJSON(&creds); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	var user models.User
-	result := config.DB.Where("email = ?", input.Email).First(&user)
-	if result.Error != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	if err := config.DB.Where("email = ?", creds.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password))
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	// Compare password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+		return
+	}
+
+	// Generate JWT
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "JWT_SECRET not set in environment"})
 		return
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID": user.ID,
-		"exp":    time.Now().Add(time.Hour * 72).Unix(),
+		"user_id": user.ID,
+		"exp":     time.Now().Add(72 * time.Hour).Unix(),
 	})
 
-	tokenString, err := token.SignedString(jwtSecret)
+	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Token generation failed"})
 		return
