@@ -9,17 +9,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = func() []byte {
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		panic("JWT_SECRET not set in environment")
-	}
-	return []byte(secret)
-}()
-
 // AuthMiddleware verifies JWT token and sets userID in context
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "JWT secret not configured"})
+			c.Abort()
+			return
+		}
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing or invalid"})
@@ -30,11 +29,10 @@ func AuthMiddleware() gin.HandlerFunc {
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-			// Validate signing method
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrInvalidKey
 			}
-			return jwtSecret, nil
+			return []byte(secret), nil
 		})
 
 		if err != nil || !token.Valid {
@@ -50,7 +48,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Attach userID to context
 		c.Set("userID", uint(claims["userID"].(float64)))
 		c.Next()
 	}
