@@ -13,7 +13,7 @@ import (
 	"github.com/shem958/cycle-backend/models"
 )
 
-// Register handles new user registration
+// Register handles user registration
 func Register(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -21,7 +21,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Hash password
+	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Password hashing failed"})
@@ -29,7 +29,7 @@ func Register(c *gin.Context) {
 	}
 	user.Password = string(hashedPassword)
 
-	// Save user
+	// Create user in database
 	if err := config.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User creation failed", "details": err.Error()})
 		return
@@ -44,8 +44,9 @@ func Login(c *gin.Context) {
 		Email    string `json:"email" binding:"required,email"`
 		Password string `json:"password" binding:"required"`
 	}
+
 	if err := c.ShouldBindJSON(&creds); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
 		return
 	}
 
@@ -55,13 +56,12 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Compare password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
-	// Generate JWT
+	// Generate JWT token
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "JWT_SECRET not set in environment"})
@@ -75,7 +75,7 @@ func Login(c *gin.Context) {
 
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Token generation failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
