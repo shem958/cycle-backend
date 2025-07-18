@@ -5,6 +5,13 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	RoleUser   = "user"
+	RoleDoctor = "doctor"
+	RoleMod    = "moderator"
+	RoleAdmin  = "admin"
+)
+
 type User struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
 	Username  string    `gorm:"uniqueIndex;not null" json:"username"`

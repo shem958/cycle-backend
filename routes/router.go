@@ -26,6 +26,7 @@ func SetupRouter() *gin.Engine {
 	RegisterCycleRoutes(api)
 	RegisterUserRoutes(api)
 	RegisterCommunityRoutes(api)
+	RegisterProfileRoutes(api)
 
 	return router
 }
