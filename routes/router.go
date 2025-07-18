@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/shem958/cycle-backend/middleware"
 )
 
 // SetupRouter initializes the Gin router with all route groups
@@ -28,6 +29,12 @@ func SetupRouter() *gin.Engine {
 	RegisterCommunityRoutes(api)
 	RegisterProfileRoutes(api)
 	RegisterModerationRoutes(api) // ✅ Added moderation routes
+
+	// 🛡️ Admin-only group
+	admin := api.Group("/admin")
+	admin.Use(middleware.AuthMiddleware(), middleware.AdminMiddleware())
+	admin.GET("/reports", GetAllReports)                   // removed routes.
+	admin.PATCH("/reports/:id/status", UpdateReportStatus) // removed routes.
 
 	return router
 }
