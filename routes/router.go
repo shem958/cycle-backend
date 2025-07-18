@@ -27,6 +27,7 @@ func SetupRouter() *gin.Engine {
 	RegisterUserRoutes(api)
 	RegisterCommunityRoutes(api)
 	RegisterProfileRoutes(api)
+	RegisterModerationRoutes(api) // ✅ Added moderation routes
 
 	return router
 }
