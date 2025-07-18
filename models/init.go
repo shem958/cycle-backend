@@ -12,6 +12,9 @@ func Migrate() {
 		&User{},
 		&Cycle{},
 		// Add more models here as your app grows
+		&Post{},
+		&Comment{},
+		&Report{},
 	)
 	if err != nil {
 		log.Fatalf("❌ Failed to migrate database models: %v", err)

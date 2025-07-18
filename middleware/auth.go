@@ -9,46 +9,31 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// AuthMiddleware verifies JWT token and sets userID in context
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		secret := os.Getenv("JWT_SECRET")
-		if secret == "" {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "JWT secret not configured"})
-			c.Abort()
+		auth := c.GetHeader("Authorization")
+		if auth == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing token"})
 			return
 		}
 
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing or invalid"})
-			c.Abort()
-			return
-		}
+		tokenString := strings.TrimPrefix(auth, "Bearer ")
 
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-
-		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrInvalidKey
-			}
-			return []byte(secret), nil
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			return []byte(os.Getenv("JWT_SECRET")), nil
 		})
-
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok || claims["userID"] == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
-			c.Abort()
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid claims"})
 			return
 		}
 
-		c.Set("userID", uint(claims["userID"].(float64)))
+		c.Set("user_id", claims["user_id"])
 		c.Next()
 	}
 }

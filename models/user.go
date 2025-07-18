@@ -1,13 +1,18 @@
 package models
 
 import (
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// User represents an account in the system
 type User struct {
-	gorm.Model
-	Email    string  `gorm:"unique;not null" json:"email"`
-	Password string  `gorm:"not null" json:"password"`        // stored as hashed
-	Cycles   []Cycle `gorm:"foreignKey:UserID" json:"cycles"` // one-to-many relationship
+	ID       uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Username string    `gorm:"uniqueIndex;not null" json:"username"`
+	Email    string    `gorm:"uniqueIndex;not null" json:"email"`
+	Password string    `gorm:"not null" json:"-"`
+}
+
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	u.ID = uuid.New()
+	return
 }
