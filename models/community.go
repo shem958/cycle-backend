@@ -11,13 +11,14 @@ import (
 type Post struct {
 	ID          uuid.UUID      `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
 	AuthorID    uuid.UUID      `gorm:"type:uuid;not null"`
+	Author      User           `gorm:"foreignKey:AuthorID"`
 	Title       string         `gorm:"not null"`
 	Content     string         `gorm:"type:text;not null"`
 	Tags        pq.StringArray `gorm:"type:text[]"`
 	IsAnonymous bool           `gorm:"default:false"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-	Comments    []Comment
+	Comments    []Comment `gorm:"foreignKey:PostID"`
 }
 
 // Comment on a post
@@ -25,6 +26,8 @@ type Comment struct {
 	ID          uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
 	PostID      uuid.UUID `gorm:"type:uuid;not null"`
 	AuthorID    uuid.UUID `gorm:"type:uuid;not null"`
+	Post        Post      `gorm:"foreignKey:PostID"`
+	Author      User      `gorm:"foreignKey:AuthorID"`
 	Content     string    `gorm:"type:text;not null"`
 	IsAnonymous bool      `gorm:"default:false"`
 	CreatedAt   time.Time
