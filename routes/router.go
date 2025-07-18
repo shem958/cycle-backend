@@ -22,19 +22,27 @@ func SetupRouter() *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	// ✅ Public API groups
 	api := router.Group("/api")
 	RegisterAuthRoutes(api)
 	RegisterCycleRoutes(api)
 	RegisterUserRoutes(api)
 	RegisterCommunityRoutes(api)
 	RegisterProfileRoutes(api)
-	RegisterModerationRoutes(api) // ✅ Added moderation routes
+	RegisterModerationRoutes(api) // if applicable
 
-	// 🛡️ Admin-only group
+	// ✅ Admin-only routes
 	admin := api.Group("/admin")
 	admin.Use(middleware.AuthMiddleware(), middleware.AdminMiddleware())
-	admin.GET("/reports", GetAllReports)                   // removed routes.
-	admin.PATCH("/reports/:id/status", UpdateReportStatus) // removed routes.
+
+	// Report moderation
+	admin.GET("/reports", GetAllReports)
+	admin.PATCH("/reports/:id/status", UpdateReportStatus)
+
+	// Content & user management
+	admin.DELETE("/posts/:id", DeletePost)
+	admin.DELETE("/comments/:id", DeleteComment)
+	admin.PUT("/users/:id/suspend", SuspendUser)
 
 	return router
 }
