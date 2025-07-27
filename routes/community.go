@@ -24,6 +24,10 @@ func RegisterCommunityRoutes(r *gin.RouterGroup) {
 
 		// Tags
 		community.GET("/tags", controllers.GetAllTags)
+
+		// ✅ Reactions (likes/dislikes)
+		community.POST("/reactions", controllers.ReactToContent)
+		community.DELETE("/reactions", controllers.RemoveReaction)
 	}
 
 }

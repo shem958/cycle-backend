@@ -53,3 +53,9 @@ type Reaction struct {
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
+
+type ReactionInput struct {
+	TargetID   string `json:"target_id" binding:"required"`   // incoming as string
+	TargetType string `json:"target_type" binding:"required"` // "post" or "comment"
+	Type       string `json:"type" binding:"required"`        // "like" or "dislike"
+}

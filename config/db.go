@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/shem958/cycle-backend/models" // ✅ This is allowed here
+	"github.com/shem958/cycle-backend/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -37,14 +37,14 @@ func ConnectDB() {
 		log.Fatalf("❌ Failed to ping database: %v", err)
 	}
 
-	// ✅ Centralize AutoMigration here
+	// Auto-migrate all models
 	err = db.AutoMigrate(
 		&models.User{},
 		&models.Cycle{},
 		&models.Post{},
 		&models.Comment{},
 		&models.Report{},
-		&models.Reaction{}, // ✅ include your new model
+		&models.Reaction{},
 	)
 	if err != nil {
 		log.Fatalf("❌ AutoMigration failed: %v", err)
@@ -52,4 +52,9 @@ func ConnectDB() {
 
 	DB = db
 	fmt.Println("✅ PostgreSQL database connected successfully")
+}
+
+// GetDB returns the global *gorm.DB instance
+func GetDB() *gorm.DB {
+	return DB
 }
