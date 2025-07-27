@@ -46,20 +46,31 @@ func CreatePost(c *gin.Context) {
 	c.JSON(http.StatusCreated, post)
 }
 
-// GetAllPosts retrieves posts with optional filtering and sorting
+// GetAllPosts retrieves posts with optional filtering, sorting, and searching
 func GetAllPosts(c *gin.Context) {
 	tagFilter := c.Query("tag")
+	search := c.Query("search")
 	sort := c.DefaultQuery("sort", "new") // "new" or "top"
 
 	db := config.DB.Model(&models.Post{}).Preload("Comments")
 
+	// Filter by tag
 	if tagFilter != "" {
 		db = db.Where("? = ANY (tags)", tagFilter)
 	}
 
+	// Apply search on title and content
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		db = db.Where("title ILIKE ? OR content ILIKE ?", searchPattern, searchPattern)
+	}
+
+	// Apply sorting
 	switch sort {
 	case "top":
-		db = db.Order("array_length(comments, 1) DESC").Preload("Comments")
+		// Sorting by number of comments is approximated here
+		// Proper implementation may require a subquery or counter cache
+		db = db.Order("array_length(comments, 1) DESC")
 	default: // "new"
 		db = db.Order("created_at DESC")
 	}
