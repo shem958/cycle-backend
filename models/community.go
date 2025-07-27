@@ -45,13 +45,11 @@ type Report struct {
 
 // Reaction to a post (e.g., 👍, ❤️)
 type Reaction struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	PostID    uuid.UUID `gorm:"type:uuid;not null"`
-	UserID    uuid.UUID `gorm:"type:uuid;not null"`
-	Emoji     string    `gorm:"type:varchar(10);not null"`
-	CreatedAt time.Time
-
-	// Associations
-	Post Post `gorm:"foreignKey:PostID"`
-	User User `gorm:"foreignKey:UserID"`
+	ID         uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID     uuid.UUID `gorm:"type:uuid;not null" json:"user_id"`
+	TargetID   uuid.UUID `gorm:"type:uuid;not null" json:"target_id"`          // post or comment ID
+	TargetType string    `gorm:"type:varchar(10);not null" json:"target_type"` // "post" or "comment"
+	Type       string    `gorm:"type:varchar(10);not null" json:"type"`        // "like" or "dislike"
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
