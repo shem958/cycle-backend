@@ -59,14 +59,29 @@ func DeleteComment(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Comment deleted"})
 }
 
-// SuspendUser sets a user's account status to suspended
+// SuspendUser sets a user's account status to suspended or unsuspended
 func SuspendUser(c *gin.Context) {
+	var input struct {
+		Suspended bool `json:"suspended"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
 	id := c.Param("id")
 	if err := config.DB.Model(&models.User{}).
 		Where("id = ?", id).
-		Update("suspended", true).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to suspend user"})
+		Update("suspended", input.Suspended).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update suspension status"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "User suspended"})
+
+	status := "unsuspended"
+	if input.Suspended {
+		status = "suspended"
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User successfully " + status})
 }
