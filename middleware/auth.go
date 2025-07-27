@@ -33,7 +33,14 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user_id", claims["user_id"])
+		// ✅ Ensure user_id is a string (UUID)
+		userID, ok := claims["user_id"].(string)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID format"})
+			return
+		}
+
+		c.Set("user_id", userID)
 		c.Set("user_role", claims["role"])
 		c.Next()
 	}
