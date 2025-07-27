@@ -6,15 +6,15 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/shem958/cycle-backend/models" // ✅ This is allowed here
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
-// ConnectDB initializes the PostgreSQL database connection
 func ConnectDB() {
-	// Load environment variables from .env
+	// Load .env
 	if err := godotenv.Load(); err != nil {
 		log.Println("⚠️  .env file not found. Using system environment variables.")
 	}
@@ -24,13 +24,11 @@ func ConnectDB() {
 		log.Fatal("❌ DATABASE_URL not set in environment")
 	}
 
-	// Connect to PostgreSQL
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("❌ Failed to connect to PostgreSQL: %v", err)
 	}
 
-	// Check DB connection with a simple ping query
 	sqlDB, err := db.DB()
 	if err != nil {
 		log.Fatalf("❌ Failed to get raw DB connection: %v", err)
@@ -39,8 +37,19 @@ func ConnectDB() {
 		log.Fatalf("❌ Failed to ping database: %v", err)
 	}
 
-	// Assign DB connection to global variable
-	DB = db
+	// ✅ Centralize AutoMigration here
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.Cycle{},
+		&models.Post{},
+		&models.Comment{},
+		&models.Report{},
+		&models.Reaction{}, // ✅ include your new model
+	)
+	if err != nil {
+		log.Fatalf("❌ AutoMigration failed: %v", err)
+	}
 
+	DB = db
 	fmt.Println("✅ PostgreSQL database connected successfully")
 }

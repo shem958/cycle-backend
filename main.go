@@ -6,7 +6,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/shem958/cycle-backend/config"
-	"github.com/shem958/cycle-backend/models"
 	"github.com/shem958/cycle-backend/routes"
 )
 
@@ -18,9 +17,6 @@ func main() {
 
 	// Connect to the database
 	config.ConnectDB()
-
-	// Auto-migrate all models
-	models.Migrate()
 
 	// Initialize and setup router
 	router := routes.SetupRouter()
