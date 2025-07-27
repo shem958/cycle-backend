@@ -9,73 +9,136 @@ import (
 	"github.com/shem958/cycle-backend/models"
 )
 
-// Create a new post
+// CreatePost creates a new post by the authenticated user
 func CreatePost(c *gin.Context) {
-	var post models.Post
-	if err := c.ShouldBindJSON(&post); err != nil {
+	var input struct {
+		Title       string   `json:"title"`
+		Content     string   `json:"content"`
+		Tags        []string `json:"tags"`
+		IsAnonymous bool     `json:"is_anonymous"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	post.ID = uuid.New()
-	db := config.DB
-	if err := db.Create(&post).Error; err != nil {
+
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	post := models.Post{
+		ID:          uuid.New(),
+		AuthorID:    userID.(uuid.UUID),
+		Title:       input.Title,
+		Content:     input.Content,
+		Tags:        input.Tags,
+		IsAnonymous: input.IsAnonymous,
+	}
+
+	if err := config.DB.Create(&post).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
 		return
 	}
+
 	c.JSON(http.StatusCreated, post)
 }
 
-// Get all posts
+// GetAllPosts retrieves all posts with their comments
 func GetAllPosts(c *gin.Context) {
 	var posts []models.Post
-	db := config.DB
-	if err := db.Preload("Comments").Find(&posts).Error; err != nil {
+	if err := config.DB.Preload("Comments").Find(&posts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch posts"})
 		return
 	}
 	c.JSON(http.StatusOK, posts)
 }
 
-// Get a single post by ID
+// GetPostByID retrieves a single post by ID
 func GetPostByID(c *gin.Context) {
 	postID := c.Param("id")
+
 	var post models.Post
-	db := config.DB
-	if err := db.Preload("Comments").First(&post, "id = ?", postID).Error; err != nil {
+	if err := config.DB.Preload("Comments").First(&post, "id = ?", postID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
 		return
 	}
 	c.JSON(http.StatusOK, post)
 }
 
-// Create a comment
+// CreateComment adds a comment to a post
 func CreateComment(c *gin.Context) {
-	var comment models.Comment
-	if err := c.ShouldBindJSON(&comment); err != nil {
+	var input struct {
+		PostID      uuid.UUID `json:"post_id"`
+		Content     string    `json:"content"`
+		IsAnonymous bool      `json:"is_anonymous"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	comment.ID = uuid.New()
-	db := config.DB
-	if err := db.Create(&comment).Error; err != nil {
+
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	comment := models.Comment{
+		ID:          uuid.New(),
+		PostID:      input.PostID,
+		AuthorID:    userID.(uuid.UUID),
+		Content:     input.Content,
+		IsAnonymous: input.IsAnonymous,
+	}
+
+	if err := config.DB.Create(&comment).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add comment"})
 		return
 	}
+
 	c.JSON(http.StatusCreated, comment)
 }
 
-// Report a post or comment
+// ReportContent allows a user to report a post or comment
 func ReportContent(c *gin.Context) {
-	var report models.Report
-	if err := c.ShouldBindJSON(&report); err != nil {
+	var input struct {
+		TargetPostID    *uuid.UUID `json:"target_post_id"`
+		TargetCommentID *uuid.UUID `json:"target_comment_id"`
+		Reason          string     `json:"reason"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	report.ID = uuid.New()
-	db := config.DB
-	if err := db.Create(&report).Error; err != nil {
+
+	if input.TargetPostID == nil && input.TargetCommentID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Target post or comment must be specified"})
+		return
+	}
+
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	report := models.Report{
+		ID:              uuid.New(),
+		ReporterID:      userID.(uuid.UUID),
+		TargetPostID:    input.TargetPostID,
+		TargetCommentID: input.TargetCommentID,
+		Reason:          input.Reason,
+	}
+
+	if err := config.DB.Create(&report).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to report content"})
 		return
 	}
+
 	c.JSON(http.StatusCreated, gin.H{"message": "Content reported successfully"})
 }
