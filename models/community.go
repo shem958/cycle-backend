@@ -42,3 +42,16 @@ type Report struct {
 	Reason          string     `gorm:"type:text;not null"`
 	CreatedAt       time.Time
 }
+
+// Reaction to a post (e.g., 👍, ❤️)
+type Reaction struct {
+	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	PostID    uuid.UUID `gorm:"type:uuid;not null"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null"`
+	Emoji     string    `gorm:"type:varchar(10);not null"`
+	CreatedAt time.Time
+
+	// Associations
+	Post Post `gorm:"foreignKey:PostID"`
+	User User `gorm:"foreignKey:UserID"`
+}
