@@ -96,6 +96,22 @@ func GetPostByID(c *gin.Context) {
 	c.JSON(http.StatusOK, post)
 }
 
+// GetAllTags returns a list of unique tags from all posts
+func GetAllTags(c *gin.Context) {
+	var tags []string
+	db := config.DB
+
+	// Fetch distinct unnest-ed tags
+	if err := db.
+		Raw(`SELECT DISTINCT unnest(tags) FROM posts`).
+		Scan(&tags).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tags"})
+		return
+	}
+
+	c.JSON(http.StatusOK, tags)
+}
+
 // CreateComment adds a comment to a post
 func CreateComment(c *gin.Context) {
 	var input struct {
