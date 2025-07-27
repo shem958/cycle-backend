@@ -54,24 +54,19 @@ func GetAllPosts(c *gin.Context) {
 
 	db := config.DB.Model(&models.Post{}).Preload("Comments")
 
-	// Filter by tag
 	if tagFilter != "" {
 		db = db.Where("? = ANY (tags)", tagFilter)
 	}
 
-	// Apply search on title and content
 	if search != "" {
 		searchPattern := "%" + search + "%"
 		db = db.Where("title ILIKE ? OR content ILIKE ?", searchPattern, searchPattern)
 	}
 
-	// Apply sorting
 	switch sort {
 	case "top":
-		// Sorting by number of comments is approximated here
-		// Proper implementation may require a subquery or counter cache
 		db = db.Order("array_length(comments, 1) DESC")
-	default: // "new"
+	default:
 		db = db.Order("created_at DESC")
 	}
 
@@ -89,7 +84,7 @@ func GetPostByID(c *gin.Context) {
 	postID := c.Param("id")
 
 	var post models.Post
-	if err := config.DB.Preload("Comments").First(&post, "id = ?", postID).Error; err != nil {
+	if err := config.DB.Preload("Comments.Replies").First(&post, "id = ?", postID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
 		return
 	}
@@ -101,7 +96,6 @@ func GetAllTags(c *gin.Context) {
 	var tags []string
 	db := config.DB
 
-	// Fetch distinct unnest-ed tags
 	if err := db.
 		Raw(`SELECT DISTINCT unnest(tags) FROM posts`).
 		Scan(&tags).Error; err != nil {
@@ -145,6 +139,43 @@ func CreateComment(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, comment)
+}
+
+// ReplyToComment handles replying to a comment (nested)
+func ReplyToComment(c *gin.Context) {
+	var input struct {
+		PostID      uuid.UUID `json:"post_id" binding:"required"`
+		ParentID    uuid.UUID `json:"parent_id" binding:"required"`
+		Content     string    `json:"content" binding:"required"`
+		IsAnonymous bool      `json:"is_anonymous"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	reply := models.Comment{
+		ID:          uuid.New(),
+		PostID:      input.PostID,
+		AuthorID:    userID.(uuid.UUID),
+		Content:     input.Content,
+		IsAnonymous: input.IsAnonymous,
+		ParentID:    &input.ParentID,
+	}
+
+	if err := config.DB.Create(&reply).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create reply"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, reply)
 }
 
 // ReportContent allows a user to report a post or comment
