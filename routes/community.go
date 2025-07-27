@@ -21,5 +21,9 @@ func RegisterCommunityRoutes(r *gin.RouterGroup) {
 
 		// Reporting
 		community.POST("/reports", controllers.ReportContent)
+
+		// Tags
+		community.GET("/tags", controllers.GetAllTags)
 	}
+
 }
