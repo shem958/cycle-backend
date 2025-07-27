@@ -22,14 +22,17 @@ type Post struct {
 }
 
 // Comment on a post
+// Comment on a post
 type Comment struct {
-	ID          uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	PostID      uuid.UUID `gorm:"type:uuid;not null"`
-	AuthorID    uuid.UUID `gorm:"type:uuid;not null"`
-	Post        Post      `gorm:"foreignKey:PostID"`
-	Author      User      `gorm:"foreignKey:AuthorID"`
-	Content     string    `gorm:"type:text;not null"`
-	IsAnonymous bool      `gorm:"default:false"`
+	ID          uuid.UUID  `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	PostID      uuid.UUID  `gorm:"type:uuid;not null"`
+	AuthorID    uuid.UUID  `gorm:"type:uuid;not null"`
+	Post        Post       `gorm:"foreignKey:PostID"`
+	Author      User       `gorm:"foreignKey:AuthorID"`
+	Content     string     `gorm:"type:text;not null"`
+	IsAnonymous bool       `gorm:"default:false"`
+	ParentID    *uuid.UUID `gorm:"type:uuid"`           // ✅ Parent comment (null = top-level)
+	Replies     []Comment  `gorm:"foreignKey:ParentID"` // ✅ Children (nested replies)
 	CreatedAt   time.Time
 }
 
