@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/shem958/cycle-backend/controllers"
 	"github.com/shem958/cycle-backend/middleware"
 )
 
@@ -31,18 +32,22 @@ func SetupRouter() *gin.Engine {
 	RegisterProfileRoutes(api)
 	RegisterModerationRoutes(api) // if applicable
 
+	// ✅ Block/Mute routes (protected)
+	api.POST("/block", middleware.AuthMiddleware(), controllers.BlockOrMuteUser)
+	api.DELETE("/unblock/:target_id", middleware.AuthMiddleware(), controllers.UnblockUser)
+
 	// ✅ Admin-only routes
 	admin := api.Group("/admin")
 	admin.Use(middleware.AuthMiddleware(), middleware.AdminMiddleware())
 
 	// Report moderation
-	admin.GET("/reports", GetAllReports)
-	admin.PATCH("/reports/:id/status", UpdateReportStatus)
+	admin.GET("/reports", controllers.GetAllReports)
+	admin.PATCH("/reports/:id/status", controllers.UpdateReportStatus)
 
 	// Content & user management
-	admin.DELETE("/posts/:id", DeletePost)
-	admin.DELETE("/comments/:id", DeleteComment)
-	admin.PUT("/users/:id/suspend", SuspendUser)
+	admin.DELETE("/posts/:id", controllers.DeletePost)
+	admin.DELETE("/comments/:id", controllers.DeleteComment)
+	admin.PUT("/users/:id/suspend", controllers.SuspendUser)
 
 	return router
 }
