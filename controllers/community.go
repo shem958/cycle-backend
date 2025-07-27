@@ -46,13 +46,30 @@ func CreatePost(c *gin.Context) {
 	c.JSON(http.StatusCreated, post)
 }
 
-// GetAllPosts retrieves all posts with their comments
+// GetAllPosts retrieves posts with optional filtering and sorting
 func GetAllPosts(c *gin.Context) {
+	tagFilter := c.Query("tag")
+	sort := c.DefaultQuery("sort", "new") // "new" or "top"
+
+	db := config.DB.Model(&models.Post{}).Preload("Comments")
+
+	if tagFilter != "" {
+		db = db.Where("? = ANY (tags)", tagFilter)
+	}
+
+	switch sort {
+	case "top":
+		db = db.Order("array_length(comments, 1) DESC").Preload("Comments")
+	default: // "new"
+		db = db.Order("created_at DESC")
+	}
+
 	var posts []models.Post
-	if err := config.DB.Preload("Comments").Find(&posts).Error; err != nil {
+	if err := db.Find(&posts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch posts"})
 		return
 	}
+
 	c.JSON(http.StatusOK, posts)
 }
 
