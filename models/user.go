@@ -22,6 +22,7 @@ type User struct {
 	Role      string    `gorm:"default:user" json:"role"` // "user", "doctor", "moderator", etc.
 	Bio       string    `json:"bio,omitempty"`
 	AvatarURL string    `json:"avatar_url,omitempty"`
+	Suspended bool      `gorm:"default:false" json:"suspended"`
 }
 
 // Block represents a user blocking or muting another user
