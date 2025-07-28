@@ -49,8 +49,8 @@ func ConnectDB() {
 		&models.Pregnancy{},
 		&models.SymptomLog{},
 		&models.PostpartumLog{},
-		&models.Appointment{}, // ✅ Add this
-
+		&models.Appointment{},
+		&models.MonitoringRecord{},
 	)
 	if err != nil {
 		log.Fatalf("❌ AutoMigration failed: %v", err)
