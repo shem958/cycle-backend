@@ -183,3 +183,23 @@ func UnbanUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "User unbanned successfully"})
 }
+
+// GetAdminMetrics returns basic system statistics
+func GetAdminMetrics(c *gin.Context) {
+	var totalUsers int64
+	var verifiedDoctors int64
+	var bannedUsers int64
+	var totalWarnings int64
+
+	config.DB.Model(&models.User{}).Count(&totalUsers)
+	config.DB.Model(&models.User{}).Where("role = ? AND verified = ?", models.RoleDoctor, true).Count(&verifiedDoctors)
+	config.DB.Model(&models.User{}).Where("banned = ?", true).Count(&bannedUsers)
+	config.DB.Model(&models.Warning{}).Count(&totalWarnings)
+
+	c.JSON(http.StatusOK, gin.H{
+		"total_users":      totalUsers,
+		"verified_doctors": verifiedDoctors,
+		"banned_users":     bannedUsers,
+		"total_warnings":   totalWarnings,
+	})
+}
