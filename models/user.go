@@ -25,7 +25,7 @@ type User struct {
 	Suspended bool      `gorm:"default:false" json:"suspended"`
 
 	Verified bool `gorm:"default:false" json:"verified"` // ✅ NEW: true if doctor is verified
-
+	Banned   bool `gorm:"default:false"`
 }
 
 // Block represents a user blocking or muting another user
