@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
+	"github.com/shem958/cycle-backend/utils"
 )
 
 // VerifyDoctor marks a doctor as verified
@@ -35,6 +36,10 @@ func VerifyDoctor(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify doctor"})
 		return
 	}
+
+	// Replace this with real admin ID when available
+	adminID := uuid.New()
+	utils.LogAdminAction(adminID, user.ID, "verify_doctor", "Doctor verified")
 
 	c.JSON(http.StatusOK, gin.H{"message": "Doctor verified successfully"})
 }
@@ -64,6 +69,9 @@ func UnverifyDoctor(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unverify doctor"})
 		return
 	}
+
+	adminID := uuid.New()
+	utils.LogAdminAction(adminID, user.ID, "unverify_doctor", "Doctor unverified")
 
 	c.JSON(http.StatusOK, gin.H{"message": "Doctor unverified successfully"})
 }
@@ -97,9 +105,7 @@ func IssueWarning(c *gin.Context) {
 		return
 	}
 
-	// TODO: Replace with actual admin ID from auth context
-	adminID := uuid.New() // Placeholder
-
+	adminID := uuid.New()
 	warning := models.Warning{
 		ID:        uuid.New(),
 		DoctorID:  doctorUUID,
@@ -112,6 +118,8 @@ func IssueWarning(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to issue warning"})
 		return
 	}
+
+	utils.LogAdminAction(adminID, doctor.ID, "issue_warning", payload.Reason)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Warning issued"})
 }
@@ -149,9 +157,13 @@ func BanUser(c *gin.Context) {
 		return
 	}
 
+	adminID := uuid.New()
+	utils.LogAdminAction(adminID, user.ID, "ban_user", "User banned by admin")
+
 	c.JSON(http.StatusOK, gin.H{"message": "User banned successfully"})
 }
 
+// UnbanUser lifts a ban on a user
 func UnbanUser(c *gin.Context) {
 	userID := c.Param("id")
 	var user models.User
@@ -165,6 +177,9 @@ func UnbanUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unban user"})
 		return
 	}
+
+	adminID := uuid.New()
+	utils.LogAdminAction(adminID, user.ID, "unban_user", "User unbanned by admin")
 
 	c.JSON(http.StatusOK, gin.H{"message": "User unbanned successfully"})
 }
