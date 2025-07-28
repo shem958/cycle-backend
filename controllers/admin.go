@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -65,4 +66,70 @@ func UnverifyDoctor(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Doctor unverified successfully"})
+}
+
+// IssueWarning allows an admin to issue a warning to a doctor
+func IssueWarning(c *gin.Context) {
+	var payload struct {
+		DoctorID string `json:"doctor_id" binding:"required"`
+		Reason   string `json:"reason" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	doctorUUID, err := uuid.Parse(payload.DoctorID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid doctor ID"})
+		return
+	}
+
+	var doctor models.User
+	if err := config.DB.First(&doctor, "id = ?", doctorUUID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Doctor not found"})
+		return
+	}
+
+	if doctor.Role != models.RoleDoctor {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not a doctor"})
+		return
+	}
+
+	// TODO: Replace with actual admin ID from auth context
+	adminID := uuid.New() // Placeholder
+
+	warning := models.Warning{
+		ID:        uuid.New(),
+		DoctorID:  doctorUUID,
+		AdminID:   adminID,
+		Reason:    payload.Reason,
+		CreatedAt: time.Now(),
+	}
+
+	if err := config.DB.Create(&warning).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to issue warning"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Warning issued"})
+}
+
+// GetDoctorWarnings lists all warnings for a given doctor
+func GetDoctorWarnings(c *gin.Context) {
+	doctorID := c.Param("id")
+	doctorUUID, err := uuid.Parse(doctorID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid doctor ID"})
+		return
+	}
+
+	var warnings []models.Warning
+	if err := config.DB.Where("doctor_id = ?", doctorUUID).Order("created_at desc").Find(&warnings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch warnings"})
+		return
+	}
+
+	c.JSON(http.StatusOK, warnings)
 }
