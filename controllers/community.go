@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
+	"gorm.io/gorm"
 )
 
 // CreatePost creates a new post by the authenticated user
@@ -52,15 +53,33 @@ func GetAllPosts(c *gin.Context) {
 	search := c.Query("search")
 	sort := c.DefaultQuery("sort", "new") // "new" or "top"
 
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	blockedIDs, err := getBlockedUserIDs(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get blocked users"})
+		return
+	}
+
 	db := config.DB.Model(&models.Post{}).Preload("Comments")
+
+	// Filter out posts from blocked users
+	if len(blockedIDs) > 0 {
+		db = db.Where("author_id NOT IN ?", blockedIDs)
+	}
 
 	if tagFilter != "" {
 		db = db.Where("? = ANY (tags)", tagFilter)
 	}
 
 	if search != "" {
-		searchPattern := "%" + search + "%"
-		db = db.Where("title ILIKE ? OR content ILIKE ?", searchPattern, searchPattern)
+		pattern := "%" + search + "%"
+		db = db.Where("title ILIKE ? OR content ILIKE ?", pattern, pattern)
 	}
 
 	switch sort {
@@ -83,11 +102,30 @@ func GetAllPosts(c *gin.Context) {
 func GetPostByID(c *gin.Context) {
 	postID := c.Param("id")
 
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	blockedIDs, err := getBlockedUserIDs(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get blocked users"})
+		return
+	}
+
 	var post models.Post
-	if err := config.DB.Preload("Comments.Replies").First(&post, "id = ?", postID).Error; err != nil {
+	if err := config.DB.Preload("Comments", func(db *gorm.DB) *gorm.DB {
+		if len(blockedIDs) > 0 {
+			db = db.Where("author_id NOT IN ?", blockedIDs)
+		}
+		return db.Preload("Replies")
+	}).First(&post, "id = ?", postID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
 		return
 	}
+
 	c.JSON(http.StatusOK, post)
 }
 
@@ -216,4 +254,17 @@ func ReportContent(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Content reported successfully"})
+}
+
+func getBlockedUserIDs(userID uuid.UUID) ([]uuid.UUID, error) {
+	var blocked []models.Block
+	if err := config.DB.Where("user_id = ?", userID).Find(&blocked).Error; err != nil {
+		return nil, err
+	}
+
+	var blockedIDs []uuid.UUID
+	for _, b := range blocked {
+		blockedIDs = append(blockedIDs, b.TargetID)
+	}
+	return blockedIDs, nil
 }
