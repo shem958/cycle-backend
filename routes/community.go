@@ -7,27 +7,25 @@ import (
 )
 
 func RegisterCommunityRoutes(r *gin.RouterGroup) {
-	community := r.Group("/community")         // removed duplicate /api
+	community := r.Group("/community")
 	community.Use(middleware.AuthMiddleware()) // protect all community endpoints
 
 	{
 		// Posts
-		community.POST("/posts", controllers.CreatePost)
 		community.GET("/posts", controllers.GetAllPosts)
 		community.GET("/posts/:id", controllers.GetPostByID)
-
-		// Comments
-		community.POST("/comments", controllers.CreateComment)
-
-		// Reporting
-		community.POST("/reports", controllers.ReportContent)
 
 		// Tags
 		community.GET("/tags", controllers.GetAllTags)
 
-		// ✅ Reactions (likes/dislikes)
-		community.POST("/reactions", controllers.ReactToContent)
-		community.DELETE("/reactions", controllers.RemoveReaction)
-	}
+		// Create/update/delete routes — include BlockSuspendedMiddleware
+		protected := community.Use(middleware.BlockSuspendedMiddleware())
 
+		protected.POST("/posts", controllers.CreatePost)
+		protected.POST("/comments", controllers.CreateComment)
+		protected.POST("/replies", controllers.ReplyToComment)
+		protected.POST("/reports", controllers.ReportContent)
+		protected.POST("/reactions", controllers.ReactToContent)
+		protected.DELETE("/reactions", controllers.RemoveReaction)
+	}
 }
