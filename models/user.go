@@ -23,6 +23,9 @@ type User struct {
 	Bio       string    `json:"bio,omitempty"`
 	AvatarURL string    `json:"avatar_url,omitempty"`
 	Suspended bool      `gorm:"default:false" json:"suspended"`
+
+	Verified bool `gorm:"default:false" json:"verified"` // ✅ NEW: true if doctor is verified
+
 }
 
 // Block represents a user blocking or muting another user
