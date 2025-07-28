@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
-	"gorm.io/gorm"
 )
 
 // CreatePost creates a new post by the authenticated user
@@ -102,28 +101,95 @@ func GetAllPosts(c *gin.Context) {
 func GetPostByID(c *gin.Context) {
 	postID := c.Param("id")
 
-	userIDVal, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-	userID := userIDVal.(uuid.UUID)
-
-	blockedIDs, err := getBlockedUserIDs(userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get blocked users"})
-		return
-	}
-
 	var post models.Post
-	if err := config.DB.Preload("Comments", func(db *gorm.DB) *gorm.DB {
-		if len(blockedIDs) > 0 {
-			db = db.Where("author_id NOT IN ?", blockedIDs)
-		}
-		return db.Preload("Replies")
-	}).First(&post, "id = ?", postID).Error; err != nil {
+	if err := config.DB.Preload("Comments.Replies").First(&post, "id = ?", postID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
 		return
+	}
+
+	userID, _ := c.Get("user_id")
+	userUUID, _ := userID.(uuid.UUID)
+
+	// Add post reaction stats
+	var postReactions []struct {
+		Type  string
+		Count int
+	}
+	config.DB.Model(&models.Reaction{}).
+		Select("type, COUNT(*) as count").
+		Where("target_id = ? AND target_type = ?", post.ID, "post").
+		Group("type").
+		Scan(&postReactions)
+
+	for _, r := range postReactions {
+		if r.Type == "like" {
+			post.LikeCount = r.Count
+		} else if r.Type == "dislike" {
+			post.DislikeCount = r.Count
+		}
+	}
+
+	// Check if current user reacted
+	var userPostReaction models.Reaction
+	if err := config.DB.Where("user_id = ? AND target_id = ? AND target_type = ?", userUUID, post.ID, "post").First(&userPostReaction).Error; err == nil {
+		post.UserReaction = userPostReaction.Type
+	}
+
+	// Comments and replies reactions
+	for i := range post.Comments {
+		comment := &post.Comments[i]
+
+		// Count reactions
+		var counts []struct {
+			Type  string
+			Count int
+		}
+		config.DB.Model(&models.Reaction{}).
+			Select("type, COUNT(*) as count").
+			Where("target_id = ? AND target_type = ?", comment.ID, "comment").
+			Group("type").
+			Scan(&counts)
+
+		for _, r := range counts {
+			if r.Type == "like" {
+				comment.LikeCount = r.Count
+			} else if r.Type == "dislike" {
+				comment.DislikeCount = r.Count
+			}
+		}
+
+		// User's reaction
+		var userCommentReaction models.Reaction
+		if err := config.DB.Where("user_id = ? AND target_id = ? AND target_type = ?", userUUID, comment.ID, "comment").First(&userCommentReaction).Error; err == nil {
+			comment.UserReaction = userCommentReaction.Type
+		}
+
+		// Repeat for replies
+		for j := range comment.Replies {
+			reply := &comment.Replies[j]
+			var replyCounts []struct {
+				Type  string
+				Count int
+			}
+			config.DB.Model(&models.Reaction{}).
+				Select("type, COUNT(*) as count").
+				Where("target_id = ? AND target_type = ?", reply.ID, "comment").
+				Group("type").
+				Scan(&replyCounts)
+
+			for _, r := range replyCounts {
+				if r.Type == "like" {
+					reply.LikeCount = r.Count
+				} else if r.Type == "dislike" {
+					reply.DislikeCount = r.Count
+				}
+			}
+
+			var userReplyReaction models.Reaction
+			if err := config.DB.Where("user_id = ? AND target_id = ? AND target_type = ?", userUUID, reply.ID, "comment").First(&userReplyReaction).Error; err == nil {
+				reply.UserReaction = userReplyReaction.Type
+			}
+		}
 	}
 
 	c.JSON(http.StatusOK, post)

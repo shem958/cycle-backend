@@ -19,6 +19,11 @@ type Post struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	Comments    []Comment `gorm:"foreignKey:PostID"`
+
+	// 👇 Transient fields used in controller responses
+	LikeCount    int    `gorm:"-" json:"like_count"`
+	DislikeCount int    `gorm:"-" json:"dislike_count"`
+	UserReaction string `gorm:"-" json:"user_reaction"`
 }
 
 // Comment on a post
@@ -34,6 +39,11 @@ type Comment struct {
 	ParentID    *uuid.UUID `gorm:"type:uuid"`           // ✅ Parent comment (null = top-level)
 	Replies     []Comment  `gorm:"foreignKey:ParentID"` // ✅ Children (nested replies)
 	CreatedAt   time.Time
+
+	// 👇 Transient fields used in controller responses
+	LikeCount    int    `gorm:"-" json:"like_count"`
+	DislikeCount int    `gorm:"-" json:"dislike_count"`
+	UserReaction string `gorm:"-" json:"user_reaction"`
 }
 
 // Report content (either post or comment)
