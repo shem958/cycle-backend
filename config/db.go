@@ -45,6 +45,9 @@ func ConnectDB() {
 		&models.Comment{},
 		&models.Report{},
 		&models.Reaction{},
+		&models.Warning{},
+		&models.Pregnancy{},
+		&models.SymptomLog{},
 	)
 	if err != nil {
 		log.Fatalf("❌ AutoMigration failed: %v", err)
