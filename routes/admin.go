@@ -29,6 +29,8 @@ func RegisterAdminRoutes(router *gin.Engine) {
 		admin.PUT("/users/:id/ban", controllers.BanUser)
 		admin.PUT("/users/:id/unban", controllers.UnbanUser)
 
+		admin.GET("/metrics", controllers.GetAdminMetrics)
+
 	}
 }
 
