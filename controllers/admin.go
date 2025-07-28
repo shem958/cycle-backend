@@ -203,3 +203,51 @@ func GetAdminMetrics(c *gin.Context) {
 		"total_warnings":   totalWarnings,
 	})
 }
+
+// SearchFilterUsers allows admins to filter users by role, status, or search query
+func SearchFilterUsers(c *gin.Context) {
+	role := c.Query("role")
+	search := c.Query("search")
+	verified := c.Query("verified")
+	suspended := c.Query("suspended")
+	banned := c.Query("banned")
+
+	var users []models.User
+	query := config.DB.Model(&models.User{})
+
+	if role != "" {
+		query = query.Where("role = ?", role)
+	}
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		query = query.Where("username ILIKE ? OR email ILIKE ?", searchPattern, searchPattern)
+	}
+	if verified != "" {
+		if verified == "true" {
+			query = query.Where("verified = ?", true)
+		} else if verified == "false" {
+			query = query.Where("verified = ?", false)
+		}
+	}
+	if suspended != "" {
+		if suspended == "true" {
+			query = query.Where("suspended = ?", true)
+		} else if suspended == "false" {
+			query = query.Where("suspended = ?", false)
+		}
+	}
+	if banned != "" {
+		if banned == "true" {
+			query = query.Where("banned = ?", true)
+		} else if banned == "false" {
+			query = query.Where("banned = ?", false)
+		}
+	}
+
+	if err := query.Order("created_at desc").Find(&users).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		return
+	}
+
+	c.JSON(http.StatusOK, users)
+}
