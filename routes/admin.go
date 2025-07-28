@@ -22,6 +22,9 @@ func RegisterAdminRoutes(router *gin.Engine) {
 
 		admin.PUT("/verify-doctor/:id", controllers.VerifyDoctor)
 		admin.PUT("/unverify-doctor/:id", controllers.UnverifyDoctor)
+
+		admin.POST("/warnings", controllers.IssueWarning)
+		admin.GET("/warnings/:id", controllers.GetDoctorWarnings)
 	}
 }
 
