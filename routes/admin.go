@@ -25,6 +25,10 @@ func RegisterAdminRoutes(router *gin.Engine) {
 
 		admin.POST("/warnings", controllers.IssueWarning)
 		admin.GET("/warnings/:id", controllers.GetDoctorWarnings)
+
+		admin.PUT("/users/:id/ban", controllers.BanUser)
+		admin.PUT("/users/:id/unban", controllers.UnbanUser)
+
 	}
 }
 
