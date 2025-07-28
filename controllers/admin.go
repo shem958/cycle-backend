@@ -133,3 +133,21 @@ func GetDoctorWarnings(c *gin.Context) {
 
 	c.JSON(http.StatusOK, warnings)
 }
+
+// BanUser permanently bans a user
+func BanUser(c *gin.Context) {
+	userID := c.Param("id")
+	var user models.User
+	if err := config.DB.First(&user, "id = ?", userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	user.Banned = true
+	if err := config.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to ban user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User banned successfully"})
+}
