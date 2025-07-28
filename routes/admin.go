@@ -5,8 +5,25 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/shem958/cycle-backend/config"
+	"github.com/shem958/cycle-backend/controllers"
 	"github.com/shem958/cycle-backend/models"
 )
+
+func RegisterAdminRoutes(router *gin.Engine) {
+	admin := router.Group("/admin")
+	{
+		admin.GET("/reports", GetAllReports)
+		admin.PUT("/reports/:id", UpdateReportStatus)
+
+		admin.DELETE("/posts/:id", DeletePost)
+		admin.DELETE("/comments/:id", DeleteComment)
+
+		admin.PUT("/users/:id/suspend", SuspendUser)
+
+		admin.PUT("/verify-doctor/:id", controllers.VerifyDoctor)
+		admin.PUT("/unverify-doctor/:id", controllers.UnverifyDoctor)
+	}
+}
 
 // Get all reports
 func GetAllReports(c *gin.Context) {
@@ -61,7 +78,7 @@ func DeleteComment(c *gin.Context) {
 // Suspend a user by ID
 func SuspendUser(c *gin.Context) {
 	userID := c.Param("id")
-	result := config.DB.Model(&models.User{}).Where("id = ?", userID).Update("status", "suspended")
+	result := config.DB.Model(&models.User{}).Where("id = ?", userID).Update("suspended", true)
 	if result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
