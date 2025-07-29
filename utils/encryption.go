@@ -10,46 +10,46 @@ import (
 	"os"
 )
 
-func getEncryptionKey() ([]byte, error) {
+func getKey() ([]byte, error) {
 	key := os.Getenv("ENCRYPTION_KEY")
 	if len(key) != 32 {
-		return nil, errors.New("ENCRYPTION_KEY must be exactly 32 characters")
+		return nil, errors.New("invalid encryption key length")
 	}
 	return []byte(key), nil
 }
 
-func Encrypt(text string) (string, error) {
-	key, err := getEncryptionKey()
+func Encrypt(plainText string) (string, error) {
+	key, err := getKey()
 	if err != nil {
 		return "", err
 	}
 
-	plaintext := []byte(text)
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
 
-	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
-	iv := ciphertext[:aes.BlockSize]
+	plainBytes := []byte(plainText)
+	cipherText := make([]byte, aes.BlockSize+len(plainBytes))
+	iv := cipherText[:aes.BlockSize]
 
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return "", err
 	}
 
 	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
+	stream.XORKeyStream(cipherText[aes.BlockSize:], plainBytes)
 
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
+	return base64.StdEncoding.EncodeToString(cipherText), nil
 }
 
-func Decrypt(cryptoText string) (string, error) {
-	key, err := getEncryptionKey()
+func Decrypt(encryptedText string) (string, error) {
+	key, err := getKey()
 	if err != nil {
 		return "", err
 	}
 
-	ciphertext, err := base64.StdEncoding.DecodeString(cryptoText)
+	cipherBytes, err := base64.StdEncoding.DecodeString(encryptedText)
 	if err != nil {
 		return "", err
 	}
@@ -59,15 +59,15 @@ func Decrypt(cryptoText string) (string, error) {
 		return "", err
 	}
 
-	if len(ciphertext) < aes.BlockSize {
-		return "", errors.New("ciphertext too short")
+	if len(cipherBytes) < aes.BlockSize {
+		return "", errors.New("cipher text too short")
 	}
 
-	iv := ciphertext[:aes.BlockSize]
-	ciphertext = ciphertext[aes.BlockSize:]
+	iv := cipherBytes[:aes.BlockSize]
+	cipherBytes = cipherBytes[aes.BlockSize:]
 
 	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(ciphertext, ciphertext)
+	stream.XORKeyStream(cipherBytes, cipherBytes)
 
-	return string(ciphertext), nil
+	return string(cipherBytes), nil
 }
