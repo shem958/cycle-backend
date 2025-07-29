@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
+	"github.com/shem958/cycle-backend/utils"
 )
 
 func CreateMonitoringRecord(c *gin.Context) {
@@ -42,12 +43,25 @@ func CreateMonitoringRecord(c *gin.Context) {
 		end = &e
 	}
 
+	// 🔐 Encrypt data and notes
+	encryptedData, err := utils.Encrypt(input.Data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encrypt data"})
+		return
+	}
+
+	encryptedNotes, err := utils.Encrypt(input.Notes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encrypt notes"})
+		return
+	}
+
 	record := models.MonitoringRecord{
 		ID:        uuid.New(),
 		UserID:    userID,
 		Type:      input.Type,
-		Data:      input.Data,
-		Notes:     input.Notes,
+		Data:      encryptedData,
+		Notes:     encryptedNotes,
 		StartDate: start,
 		EndDate:   end,
 	}
@@ -57,7 +71,7 @@ func CreateMonitoringRecord(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, record)
+	c.JSON(http.StatusOK, gin.H{"message": "Record created"})
 }
 
 func GetUserMonitoringRecords(c *gin.Context) {
@@ -67,6 +81,19 @@ func GetUserMonitoringRecords(c *gin.Context) {
 	if err := config.DB.Where("user_id = ?", userID).Order("start_date desc").Find(&records).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch records"})
 		return
+	}
+
+	// 🔓 Decrypt each record
+	for i, record := range records {
+		decryptedData, err := utils.Decrypt(record.Data)
+		if err == nil {
+			records[i].Data = decryptedData
+		}
+
+		decryptedNotes, err := utils.Decrypt(record.Notes)
+		if err == nil {
+			records[i].Notes = decryptedNotes
+		}
 	}
 
 	c.JSON(http.StatusOK, records)
