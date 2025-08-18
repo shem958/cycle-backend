@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/controllers"
 	"github.com/shem958/cycle-backend/middleware"
 )
@@ -34,7 +35,7 @@ func SetupRouter() *gin.Engine {
 	RegisterInsightsRoutes(api)
 
 	// ✅ Pregnancy Checkup Routes
-	RegisterPregnancyCheckupRoutes(api)
+	RegisterPregnancyCheckupRoutes(api, config.DB)
 
 	// ✅ Block/Mute routes (protected)
 	api.POST("/block", middleware.AuthMiddleware(), controllers.BlockOrMuteUser)

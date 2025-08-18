@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-
 	"github.com/shem958/cycle-backend/models"
 	"github.com/shem958/cycle-backend/services"
 	"gorm.io/gorm"
@@ -14,6 +13,10 @@ import (
 
 type PregnancyCheckupController struct {
 	Service *services.PregnancyCheckupService
+}
+
+func NewPregnancyCheckupController(service *services.PregnancyCheckupService) *PregnancyCheckupController {
+	return &PregnancyCheckupController{Service: service}
 }
 
 // Create new checkup
@@ -51,7 +54,7 @@ func (pc *PregnancyCheckupController) CreateCheckup(c *gin.Context) {
 	c.JSON(http.StatusCreated, checkup)
 }
 
-// Get checkups for a user
+// Get all checkups for a user
 func (pc *PregnancyCheckupController) GetUserCheckups(c *gin.Context) {
 	userID := c.Param("userID")
 	uid, err := uuid.Parse(userID)
@@ -69,7 +72,7 @@ func (pc *PregnancyCheckupController) GetUserCheckups(c *gin.Context) {
 	c.JSON(http.StatusOK, checkups)
 }
 
-// Get a single checkup
+// Get a single checkup by ID
 func (pc *PregnancyCheckupController) GetCheckup(c *gin.Context) {
 	id := c.Param("id")
 	cid, err := uuid.Parse(id)
@@ -91,7 +94,7 @@ func (pc *PregnancyCheckupController) GetCheckup(c *gin.Context) {
 	c.JSON(http.StatusOK, checkup)
 }
 
-// Update checkup
+// Update a checkup
 func (pc *PregnancyCheckupController) UpdateCheckup(c *gin.Context) {
 	id := c.Param("id")
 	cid, err := uuid.Parse(id)
@@ -119,7 +122,7 @@ func (pc *PregnancyCheckupController) UpdateCheckup(c *gin.Context) {
 	c.JSON(http.StatusOK, checkup)
 }
 
-// Delete checkup
+// Delete a checkup
 func (pc *PregnancyCheckupController) DeleteCheckup(c *gin.Context) {
 	id := c.Param("id")
 	cid, err := uuid.Parse(id)
