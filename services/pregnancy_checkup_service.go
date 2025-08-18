@@ -2,47 +2,39 @@ package services
 
 import (
 	"github.com/google/uuid"
-	"gorm.io/gorm"
-
+	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
 )
 
-type PregnancyCheckupService struct {
-	DB *gorm.DB
-}
+type PregnancyCheckupService struct{}
 
-func NewPregnancyCheckupService(db *gorm.DB) *PregnancyCheckupService {
-	return &PregnancyCheckupService{DB: db}
-}
-
-// Create new pregnancy checkup
 func (s *PregnancyCheckupService) CreateCheckup(checkup *models.PregnancyCheckup) error {
-	return s.DB.Create(checkup).Error
+	db := config.GetDB()
+	return db.Create(checkup).Error
 }
 
-// Get all checkups for a user
 func (s *PregnancyCheckupService) GetCheckupsByUser(userID uuid.UUID) ([]models.PregnancyCheckup, error) {
+	db := config.GetDB()
 	var checkups []models.PregnancyCheckup
-	err := s.DB.Where("user_id = ?", userID).Order("visit_date desc").Find(&checkups).Error
+	err := db.Where("user_id = ?", userID).Find(&checkups).Error
 	return checkups, err
 }
 
-// Get a single checkup
 func (s *PregnancyCheckupService) GetCheckupByID(id uuid.UUID) (*models.PregnancyCheckup, error) {
+	db := config.GetDB()
 	var checkup models.PregnancyCheckup
-	err := s.DB.First(&checkup, "id = ?", id).Error
-	if err != nil {
+	if err := db.First(&checkup, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &checkup, nil
 }
 
-// Update checkup
 func (s *PregnancyCheckupService) UpdateCheckup(checkup *models.PregnancyCheckup) error {
-	return s.DB.Save(checkup).Error
+	db := config.GetDB()
+	return db.Save(checkup).Error
 }
 
-// Delete checkup
 func (s *PregnancyCheckupService) DeleteCheckup(id uuid.UUID) error {
-	return s.DB.Delete(&models.PregnancyCheckup{}, "id = ?", id).Error
+	db := config.GetDB()
+	return db.Delete(&models.PregnancyCheckup{}, "id = ?", id).Error
 }

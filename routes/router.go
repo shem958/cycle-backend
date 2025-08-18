@@ -31,7 +31,10 @@ func SetupRouter() *gin.Engine {
 	RegisterCommunityRoutes(api)
 	RegisterProfileRoutes(api)
 	RegisterModerationRoutes(api) // if applicable
-    RegisterInsightsRoutes(api)
+	RegisterInsightsRoutes(api)
+
+	// ✅ Pregnancy Checkup Routes
+	RegisterPregnancyCheckupRoutes(api)
 
 	// ✅ Block/Mute routes (protected)
 	api.POST("/block", middleware.AuthMiddleware(), controllers.BlockOrMuteUser)
