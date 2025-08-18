@@ -4,22 +4,26 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-// PregnancyCheckup represents a doctor's visit/checkup during pregnancy
 type PregnancyCheckup struct {
-	ID          uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
-	PregnancyID uuid.UUID `gorm:"type:uuid;not null;index" json:"pregnancy_id"`
-	DoctorID    uuid.UUID `gorm:"type:uuid;not null;index" json:"doctor_id"`
-	Doctor      User      `gorm:"foreignKey:DoctorID" json:"doctor"`
+	ID            uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
+	UserID        uuid.UUID `gorm:"type:uuid;not null" json:"user_id"`
+	DoctorID      uuid.UUID `gorm:"type:uuid" json:"doctor_id"`
+	VisitDate     time.Time `gorm:"not null" json:"visit_date"`
+	DoctorNotes   string    `gorm:"type:text" json:"doctor_notes"`
+	Weight        float64   `json:"weight"`
+	BloodPressure string    `json:"blood_pressure"`
+	NextCheckupAt time.Time `json:"next_checkup_at"`
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
+}
 
-	Date      time.Time  `gorm:"not null" json:"date"`
-	Notes     string     `gorm:"type:text" json:"notes,omitempty"`
-	NextVisit *time.Time `json:"next_visit,omitempty"`
-
-	// ✅ Relation to file attachments
-	Files []PregnancyCheckupFile `gorm:"foreignKey:CheckupID" json:"files"`
-
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+func (pc *PregnancyCheckup) BeforeCreate(tx *gorm.DB) (err error) {
+	if pc.ID == uuid.Nil {
+		pc.ID = uuid.New()
+	}
+	return
 }
