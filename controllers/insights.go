@@ -3,8 +3,8 @@ package controllers
 import (
 	"net/http"
 	"sort"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -14,19 +14,24 @@ import (
 
 // CycleInsight contains prediction data for user's cycle
 type CycleInsight struct {
-	AverageLength       float64   `json:"average_length"`
-	NextPeriodStart     time.Time `json:"next_period_start"`
-	PredictedOvulation  time.Time `json:"predicted_ovulation"`
-	FertileWindowStart  time.Time `json:"fertile_window_start"`
-	FertileWindowEnd    time.Time `json:"fertile_window_end"`
-	IsIrregular         bool      `json:"is_irregular"`
-	CommonMood          string    `json:"common_mood,omitempty"`
-	CommonSymptoms      []string  `json:"common_symptoms,omitempty"`
-	TrackedCycleCount   int       `json:"tracked_cycle_count"`
+	AverageLength      float64   `json:"average_length"`
+	NextPeriodStart    time.Time `json:"next_period_start"`
+	PredictedOvulation time.Time `json:"predicted_ovulation"`
+	FertileWindowStart time.Time `json:"fertile_window_start"`
+	FertileWindowEnd   time.Time `json:"fertile_window_end"`
+	IsIrregular        bool      `json:"is_irregular"`
+	CommonMood         string    `json:"common_mood,omitempty"`
+	CommonSymptoms     []string  `json:"common_symptoms,omitempty"`
+	TrackedCycleCount  int       `json:"tracked_cycle_count"`
 }
 
 func GetCycleInsights(c *gin.Context) {
-	userID := c.MustGet("user_id").(uuid.UUID)
+	userIDStr := c.MustGet("user_id").(string)
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
 
 	var cycles []models.Cycle
 	if err := config.DB.Where("user_id = ?", userID).Order("start_date asc").Find(&cycles).Error; err != nil {

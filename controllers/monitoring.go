@@ -20,7 +20,12 @@ func CreateMonitoringRecord(c *gin.Context) {
 		EndDate   string `json:"end_date"`
 	}
 
-	userID := c.MustGet("user_id").(uuid.UUID)
+	userIDStr := c.MustGet("user_id").(string)
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
@@ -75,7 +80,12 @@ func CreateMonitoringRecord(c *gin.Context) {
 }
 
 func GetUserMonitoringRecords(c *gin.Context) {
-	userID := c.MustGet("user_id").(uuid.UUID)
+	userIDStr := c.MustGet("user_id").(string)
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
 
 	var records []models.MonitoringRecord
 	if err := config.DB.Where("user_id = ?", userID).Order("start_date desc").Find(&records).Error; err != nil {
