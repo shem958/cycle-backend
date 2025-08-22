@@ -4,13 +4,18 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
+	"github.com/shem958/cycle-backend/utils"
 )
 
 // GetCycles retrieves all cycles for the authenticated user
 func GetCycles(c *gin.Context) {
-	userID := c.MustGet("userID").(uint)
+	userID := utils.GetUserIDFromContextOrAbort(c)
+	if userID == uuid.Nil {
+		return
+	}
 	var cycles []models.Cycle
 
 	if err := config.DB.Where("user_id = ?", userID).Find(&cycles).Error; err != nil {
@@ -29,7 +34,10 @@ func AddCycle(c *gin.Context) {
 		return
 	}
 
-	userID := c.MustGet("userID").(uint)
+	userID := utils.GetUserIDFromContextOrAbort(c)
+	if userID == uuid.Nil {
+		return
+	}
 	input.UserID = userID
 
 	if err := config.DB.Create(&input).Error; err != nil {
@@ -42,8 +50,14 @@ func AddCycle(c *gin.Context) {
 
 // UpdateCycle updates a cycle owned by the authenticated user
 func UpdateCycle(c *gin.Context) {
-	cycleID := c.Param("id")
-	userID := c.MustGet("userID").(uint)
+	cycleID := utils.ParseUUIDParamOrAbort(c, "id")
+	if cycleID == uuid.Nil {
+		return
+	}
+	userID := utils.GetUserIDFromContextOrAbort(c)
+	if userID == uuid.Nil {
+		return
+	}
 
 	var cycle models.Cycle
 	if err := config.DB.Where("id = ? AND user_id = ?", cycleID, userID).First(&cycle).Error; err != nil {
@@ -73,8 +87,14 @@ func UpdateCycle(c *gin.Context) {
 
 // DeleteCycle removes a cycle owned by the authenticated user
 func DeleteCycle(c *gin.Context) {
-	cycleID := c.Param("id")
-	userID := c.MustGet("userID").(uint)
+	cycleID := utils.ParseUUIDParamOrAbort(c, "id")
+	if cycleID == uuid.Nil {
+		return
+	}
+	userID := utils.GetUserIDFromContextOrAbort(c)
+	if userID == uuid.Nil {
+		return
+	}
 
 	var cycle models.Cycle
 	if err := config.DB.Where("id = ? AND user_id = ?", cycleID, userID).First(&cycle).Error; err != nil {

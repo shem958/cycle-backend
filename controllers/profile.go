@@ -4,12 +4,17 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
+	"github.com/shem958/cycle-backend/utils"
 )
 
 func GetProfile(c *gin.Context) {
-	userID := c.MustGet("user_id")
+	userID := utils.GetUserIDFromContextOrAbort(c)
+	if userID == uuid.Nil {
+		return
+	}
 
 	var user models.User
 	if err := config.DB.First(&user, "id = ?", userID).Error; err != nil {
@@ -21,7 +26,10 @@ func GetProfile(c *gin.Context) {
 }
 
 func UpdateProfile(c *gin.Context) {
-	userID := c.MustGet("user_id")
+	userID := utils.GetUserIDFromContextOrAbort(c)
+	if userID == uuid.Nil {
+		return
+	}
 
 	var updates struct {
 		Username  string `json:"username"`

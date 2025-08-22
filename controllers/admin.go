@@ -13,15 +13,13 @@ import (
 
 // VerifyDoctor marks a doctor as verified
 func VerifyDoctor(c *gin.Context) {
-	doctorID := c.Param("id")
-	parsedID, err := uuid.Parse(doctorID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid doctor ID"})
+	doctorID := utils.ParseUUIDParamOrAbort(c, "id")
+	if doctorID == uuid.Nil {
 		return
 	}
 
 	var user models.User
-	if err := config.DB.First(&user, "id = ?", parsedID).Error; err != nil {
+	if err := config.DB.First(&user, "id = ?", doctorID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -46,15 +44,13 @@ func VerifyDoctor(c *gin.Context) {
 
 // UnverifyDoctor removes the verified status from a doctor
 func UnverifyDoctor(c *gin.Context) {
-	doctorID := c.Param("id")
-	parsedID, err := uuid.Parse(doctorID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid doctor ID"})
+	doctorID := utils.ParseUUIDParamOrAbort(c, "id")
+	if doctorID == uuid.Nil {
 		return
 	}
 
 	var user models.User
-	if err := config.DB.First(&user, "id = ?", parsedID).Error; err != nil {
+	if err := config.DB.First(&user, "id = ?", doctorID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -88,9 +84,8 @@ func IssueWarning(c *gin.Context) {
 		return
 	}
 
-	doctorUUID, err := uuid.Parse(payload.DoctorID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid doctor ID"})
+	doctorUUID := utils.ParseUUIDParamOrAbort(c, "doctor_id")
+	if doctorUUID == uuid.Nil {
 		return
 	}
 
@@ -126,10 +121,8 @@ func IssueWarning(c *gin.Context) {
 
 // GetDoctorWarnings lists all warnings for a given doctor
 func GetDoctorWarnings(c *gin.Context) {
-	doctorID := c.Param("id")
-	doctorUUID, err := uuid.Parse(doctorID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid doctor ID"})
+	doctorUUID := utils.ParseUUIDParamOrAbort(c, "id")
+	if doctorUUID == uuid.Nil {
 		return
 	}
 
@@ -144,7 +137,10 @@ func GetDoctorWarnings(c *gin.Context) {
 
 // BanUser permanently bans a user
 func BanUser(c *gin.Context) {
-	userID := c.Param("id")
+	userID := utils.ParseUUIDParamOrAbort(c, "id")
+	if userID == uuid.Nil {
+		return
+	}
 	var user models.User
 	if err := config.DB.First(&user, "id = ?", userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
@@ -165,7 +161,10 @@ func BanUser(c *gin.Context) {
 
 // UnbanUser lifts a ban on a user
 func UnbanUser(c *gin.Context) {
-	userID := c.Param("id")
+	userID := utils.ParseUUIDParamOrAbort(c, "id")
+	if userID == uuid.Nil {
+		return
+	}
 	var user models.User
 	if err := config.DB.First(&user, "id = ?", userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})

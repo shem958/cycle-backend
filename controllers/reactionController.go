@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
+	"github.com/shem958/cycle-backend/utils"
 )
 
 // ReactionInput defines the structure for creating or updating a reaction
@@ -24,21 +25,8 @@ func ReactToContent(c *gin.Context) {
 		return
 	}
 
-	userIDRaw, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	userIDStr, ok := userIDRaw.(string)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID in context"})
-		return
-	}
-
-	userUUID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user UUID"})
+	userUUID := utils.GetUserIDFromContextOrAbort(c)
+	if userUUID == uuid.Nil {
 		return
 	}
 

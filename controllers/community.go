@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
+	"github.com/shem958/cycle-backend/utils"
 )
 
 // CreatePost creates a new post by the authenticated user
@@ -23,15 +24,14 @@ func CreatePost(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	userID := utils.GetUserIDFromContextOrAbort(c)
+	if userID == uuid.Nil {
 		return
 	}
 
 	post := models.Post{
 		ID:          uuid.New(),
-		AuthorID:    userID.(uuid.UUID),
+		AuthorID:    userID,
 		Title:       input.Title,
 		Content:     input.Content,
 		Tags:        input.Tags,

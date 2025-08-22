@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
+	"github.com/shem958/cycle-backend/utils"
 )
 
 func BlockOrMuteUser(c *gin.Context) {
@@ -21,15 +22,14 @@ func BlockOrMuteUser(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	userID := utils.GetUserIDFromContextOrAbort(c)
+	if userID == uuid.Nil {
 		return
 	}
 
 	block := models.Block{
 		ID:        uuid.New(),
-		UserID:    userID.(uuid.UUID),
+		UserID:    userID,
 		TargetID:  input.TargetID,
 		IsMuted:   input.IsMuted,
 		CreatedAt: time.Now(),
@@ -49,10 +49,12 @@ func BlockOrMuteUser(c *gin.Context) {
 }
 
 func UnblockUser(c *gin.Context) {
-	targetID := c.Param("target_id")
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	targetID := utils.ParseUUIDParamOrAbort(c, "target_id")
+	if targetID == uuid.Nil {
+		return
+	}
+	userID := utils.GetUserIDFromContextOrAbort(c)
+	if userID == uuid.Nil {
 		return
 	}
 

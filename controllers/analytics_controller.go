@@ -11,6 +11,7 @@ import (
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
 	"github.com/shem958/cycle-backend/services"
+	"github.com/shem958/cycle-backend/utils"
 )
 
 // --------- Helpers ---------
@@ -65,9 +66,8 @@ func parseRange(c *gin.Context) (*time.Time, *time.Time, bool) {
 // --------- User self-analytics ---------
 // GET /analytics/user/:user_id/pregnancy-postpartum
 func GetPregnancyPostpartumAnalytics(c *gin.Context) {
-	userID, err := uuid.Parse(c.Param("user_id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
+	userID := utils.ParseUUIDParamOrAbort(c, "user_id")
+	if userID == uuid.Nil {
 		return
 	}
 
@@ -93,9 +93,8 @@ func GetPatientAnalyticsForDoctor(c *gin.Context) {
 		return
 	}
 
-	patientID, err := uuid.Parse(c.Param("patient_id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid patient_id"})
+	patientID := utils.ParseUUIDParamOrAbort(c, "patient_id")
+	if patientID == uuid.Nil {
 		return
 	}
 
@@ -115,9 +114,8 @@ func GetPatientAnalyticsForDoctor(c *gin.Context) {
 // --------- CSV export (user self) ---------
 // GET /analytics/user/:user_id/pregnancy-postpartum.csv
 func ExportPregnancyPostpartumCSV(c *gin.Context) {
-	userID, err := uuid.Parse(c.Param("user_id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
+	userID := utils.ParseUUIDParamOrAbort(c, "user_id")
+	if userID == uuid.Nil {
 		return
 	}
 
@@ -177,9 +175,8 @@ func ExportPatientAnalyticsCSVForDoctor(c *gin.Context) {
 		return
 	}
 
-	patientID, err := uuid.Parse(c.Param("patient_id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid patient_id"})
+	patientID := utils.ParseUUIDParamOrAbort(c, "patient_id")
+	if patientID == uuid.Nil {
 		return
 	}
 
