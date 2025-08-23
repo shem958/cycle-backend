@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/shem958/cycle-backend/migrations"
 	"github.com/shem958/cycle-backend/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -35,6 +36,11 @@ func ConnectDB() {
 	}
 	if err = sqlDB.Ping(); err != nil {
 		log.Fatalf("❌ Failed to ping database: %v", err)
+	}
+
+	// Run custom migrations first
+	if err = migrations.RunMigrations(db); err != nil {
+		log.Fatalf("❌ Custom migrations failed: %v", err)
 	}
 
 	// Auto-migrate all models
