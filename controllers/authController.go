@@ -36,6 +36,7 @@ func Register(c *gin.Context) {
 		Username: input.Username,
 		Email:    input.Email,
 		Password: string(hashed),
+		Role:     models.RoleUser, // Set default role to "user"
 	}
 	if err := config.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User may already exist or data is invalid"})
