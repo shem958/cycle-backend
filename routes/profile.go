@@ -7,7 +7,7 @@ import (
 )
 
 func RegisterProfileRoutes(r *gin.RouterGroup) {
-	profile := r.Group("/api/profile")
+	profile := r.Group("/profile")
 	profile.Use(middleware.AuthMiddleware())
 	{
 		profile.GET("/", controllers.GetProfile)
