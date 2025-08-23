@@ -11,24 +11,36 @@ import (
 
 func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Helper function to set CORS headers and abort with error
+		abortWithCORSError := func(status int, message string) {
+			c.Header("Access-Control-Allow-Origin", "http://localhost:3000")
+			c.Header("Access-Control-Allow-Credentials", "true")
+			c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+			c.JSON(status, gin.H{"error": message})
+			c.Abort()
+		}
+
 		uidRaw, exists := c.Get("user_id")
 		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			c.Abort()
+			abortWithCORSError(http.StatusUnauthorized, "Unauthorized")
 			return
 		}
 
-		userID, ok := uidRaw.(uuid.UUID)
+		userIDStr, ok := uidRaw.(string)
 		if !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
-			c.Abort()
+			abortWithCORSError(http.StatusInternalServerError, "Invalid user ID type")
+			return
+		}
+
+		userID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			abortWithCORSError(http.StatusBadRequest, "Invalid user ID format")
 			return
 		}
 
 		var user models.User
 		if err := config.DB.First(&user, "id = ?", userID).Error; err != nil || user.Role != "admin" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
-			c.Abort()
+			abortWithCORSError(http.StatusForbidden, "Access denied")
 			return
 		}
 

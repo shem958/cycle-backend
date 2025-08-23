@@ -11,9 +11,18 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Helper function to set CORS headers and abort with error
+		abortWithCORSError := func(status int, message string) {
+			c.Header("Access-Control-Allow-Origin", "http://localhost:3000")
+			c.Header("Access-Control-Allow-Credentials", "true")
+			c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+			c.JSON(status, gin.H{"error": message})
+			c.Abort()
+		}
+
 		auth := c.GetHeader("Authorization")
 		if auth == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing token"})
+			abortWithCORSError(http.StatusUnauthorized, "Missing token")
 			return
 		}
 
@@ -23,20 +32,20 @@ func AuthMiddleware() gin.HandlerFunc {
 			return []byte(os.Getenv("JWT_SECRET")), nil
 		})
 		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			abortWithCORSError(http.StatusUnauthorized, "Invalid token")
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid claims"})
+			abortWithCORSError(http.StatusUnauthorized, "Invalid claims")
 			return
 		}
 
 		// ✅ Ensure user_id is a string (UUID)
 		userID, ok := claims["user_id"].(string)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID format"})
+			abortWithCORSError(http.StatusUnauthorized, "Invalid user ID format")
 			return
 		}
 
