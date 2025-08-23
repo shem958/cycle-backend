@@ -40,7 +40,22 @@ func GetCycleInsights(c *gin.Context) {
 	}
 
 	if len(cycles) < 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Not enough cycle data to calculate insights"})
+		// Return empty insight with default values when not enough data
+		insight := CycleInsight{
+			AverageLength:      0,
+			NextPeriodStart:    time.Now(),
+			PredictedOvulation: time.Now(),
+			FertileWindowStart: time.Now(),
+			FertileWindowEnd:   time.Now(),
+			IsIrregular:        false,
+			CommonMood:         "",
+			CommonSymptoms:     []string{},
+			TrackedCycleCount:  len(cycles),
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"insight": insight,
+			"message": "Not enough cycle data to calculate insights. Need at least 2 cycles.",
+		})
 		return
 	}
 
