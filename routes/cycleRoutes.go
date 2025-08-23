@@ -11,7 +11,9 @@ func RegisterCycleRoutes(rg *gin.RouterGroup) {
 	cycle := rg.Group("/cycles")
 	cycle.Use(middleware.AuthMiddleware())
 
+	cycle.GET("", controllers.GetCycles)
 	cycle.GET("/", controllers.GetCycles)
+	cycle.POST("", controllers.AddCycle)
 	cycle.POST("/", controllers.AddCycle)
 	cycle.PUT("/:id", controllers.UpdateCycle)
 	cycle.DELETE("/:id", controllers.DeleteCycle)

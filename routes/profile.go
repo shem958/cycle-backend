@@ -10,7 +10,9 @@ func RegisterProfileRoutes(r *gin.RouterGroup) {
 	profile := r.Group("/profile")
 	profile.Use(middleware.AuthMiddleware())
 	{
+		profile.GET("", controllers.GetProfile)
 		profile.GET("/", controllers.GetProfile)
+		profile.PUT("", controllers.UpdateProfile)
 		profile.PUT("/", controllers.UpdateProfile)
 	}
 }
