@@ -57,7 +57,16 @@ func GetAllPosts(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
+	userIDStr, ok := userIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
 
 	blockedIDs, err := getBlockedUserIDs(userID)
 	if err != nil {
@@ -107,8 +116,21 @@ func GetPostByID(c *gin.Context) {
 		return
 	}
 
-	userID, _ := c.Get("user_id")
-	userUUID, _ := userID.(uuid.UUID)
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userIDStr, ok := userIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
 
 	// Add post reaction stats
 	var postReactions []struct {
@@ -223,16 +245,26 @@ func CreateComment(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
+	userIDVal, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userIDStr, ok := userIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+	parsedUserID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
 
 	comment := models.Comment{
 		ID:          uuid.New(),
 		PostID:      input.PostID,
-		AuthorID:    userID.(uuid.UUID),
+		AuthorID:    parsedUserID,
 		Content:     input.Content,
 		IsAnonymous: input.IsAnonymous,
 	}
@@ -259,16 +291,26 @@ func ReplyToComment(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
+	userIDVal, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userIDStr, ok := userIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+	parsedUserID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
 
 	reply := models.Comment{
 		ID:          uuid.New(),
 		PostID:      input.PostID,
-		AuthorID:    userID.(uuid.UUID),
+		AuthorID:    parsedUserID,
 		Content:     input.Content,
 		IsAnonymous: input.IsAnonymous,
 		ParentID:    &input.ParentID,
@@ -300,15 +342,25 @@ func ReportContent(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
+	userIDVal, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userIDStr, ok := userIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+	parsedUserID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
 
 	report := models.Report{
 		ID:              uuid.New(),
-		ReporterID:      userID.(uuid.UUID),
+		ReporterID:      parsedUserID,
 		TargetPostID:    input.TargetPostID,
 		TargetCommentID: input.TargetCommentID,
 		Reason:          input.Reason,
