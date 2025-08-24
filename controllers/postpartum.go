@@ -79,3 +79,50 @@ func GetPostpartumLogs(c *gin.Context) {
 
 	c.JSON(http.StatusOK, logs)
 }
+
+// GetPostpartumDashboard retrieves combined postpartum data for the dashboard
+func GetPostpartumDashboard(c *gin.Context) {
+	userID := c.Param("id")
+	parsedID, err := uuid.Parse(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Get logs
+	var logs []models.PostpartumLog
+	if err := config.DB.Where("user_id = ?", parsedID).Order("date desc").Find(&logs).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve logs"})
+		return
+	}
+
+	// Get checkups
+	var checkups []models.PostpartumCheckup
+	if err := config.DB.Where("user_id = ?", parsedID).Order("visit_date desc").Find(&checkups).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve checkups"})
+		return
+	}
+
+	// Construct dashboard response
+	dashboard := gin.H{
+		"logs":     logs,
+		"checkups": checkups,
+	}
+
+	// Add latest metrics if available
+	if len(logs) > 0 {
+		latestLog := logs[0]
+		dashboard["latestMetrics"] = gin.H{
+			"mood":                latestLog.Mood,
+			"pain_level":          latestLog.PainLevel,
+			"sleep_hours":         latestLog.SleepHours,
+			"breastfeeding":       latestLog.Breastfeeding,
+			"appetite_level":      latestLog.AppetiteLevel,
+			"follow_up_scheduled": latestLog.FollowUpScheduled,
+			"date":                latestLog.Date,
+			"notes":               latestLog.Notes,
+		}
+	}
+
+	c.JSON(http.StatusOK, dashboard)
+}

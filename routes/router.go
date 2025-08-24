@@ -36,7 +36,7 @@ func SetupRouter() *gin.Engine {
 
 	// ✅ Pregnancy Checkup Routes
 	RegisterPregnancyCheckupRoutes(api, config.DB)
-	RegisterPostpartumCheckupRoutes(api)
+	RegisterPostpartumRoutes(api) // Handles both logs and checkups
 	RegisterAnalyticsRoutes(api)
 
 	// ✅ Block/Mute routes (protected)
