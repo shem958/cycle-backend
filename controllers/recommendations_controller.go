@@ -19,9 +19,15 @@ func GetRecommendations(c *gin.Context) {
 		return
 	}
 
-	parsedID, ok := userID.(uuid.UUID)
+	userIDStr, ok := userID.(string)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID format"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+
+	parsedID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
 
