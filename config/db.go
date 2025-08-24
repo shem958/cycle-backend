@@ -59,6 +59,7 @@ func ConnectDB() {
 		&models.PregnancyCheckupFile{}, // new
 		&models.PostpartumCheckup{},
 		&models.PostpartumCheckupFile{},
+		&models.Block{},          // user blocking/muting
 		&models.Recommendation{}, // health recommendations
 		&models.Notification{},   // user notifications
 	)

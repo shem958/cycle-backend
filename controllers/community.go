@@ -3,11 +3,14 @@ package controllers
 import (
 	"net/http"
 
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/shem958/cycle-backend/config"
 	"github.com/shem958/cycle-backend/models"
 	"github.com/shem958/cycle-backend/utils"
+	"gorm.io/gorm"
 )
 
 // CreatePost creates a new post by the authenticated user
@@ -73,6 +76,7 @@ func GetAllPosts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get blocked users"})
 		return
 	}
+	// Only filter by blocked users if there are any
 
 	db := config.DB.Model(&models.Post{}).Preload("Comments")
 
@@ -376,13 +380,21 @@ func ReportContent(c *gin.Context) {
 
 func getBlockedUserIDs(userID uuid.UUID) ([]uuid.UUID, error) {
 	var blocked []models.Block
-	if err := config.DB.Where("user_id = ?", userID).Find(&blocked).Error; err != nil {
-		return nil, err
+	result := config.DB.Where("user_id = ? AND is_muted = ?", userID, false).Find(&blocked)
+
+	// If table doesn't exist or other SQL error
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, result.Error
 	}
 
-	var blockedIDs []uuid.UUID
-	for _, b := range blocked {
-		blockedIDs = append(blockedIDs, b.TargetID)
+	// If no blocks found, return empty slice
+	if len(blocked) == 0 {
+		return []uuid.UUID{}, nil
+	}
+
+	blockedIDs := make([]uuid.UUID, len(blocked))
+	for i, b := range blocked {
+		blockedIDs[i] = b.TargetID
 	}
 	return blockedIDs, nil
 }
